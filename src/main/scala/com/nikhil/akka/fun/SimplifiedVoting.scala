@@ -42,15 +42,16 @@ class VoteAggregator extends Actor with ActorLogging {
   }
 
   def aggregating(remaining: Set[ActorRef],
-                  votes: Map[String, Option[String]] = Map.empty): Receive = {
-    case VoteStatusReply(maybeCandidate) if remaining.contains(sender) =>
+                  votes: Map[String, Int] = Map.empty): Receive = {
+    case VoteStatusReply(Some(candidate)) if remaining.contains(sender) =>
+      val newRemaining = remaining - sender
+      val votesForCandidate = votes.getOrElse(candidate, 0) + 1
       context.become(
-        aggregating(
-          (remaining - sender),
-          votes + (sender.path.name -> maybeCandidate)
-        )
+        aggregating(newRemaining, votes + (candidate -> votesForCandidate))
       )
       if (remaining.size == 1) self ! Print
+    case VoteStatusReply(None) =>
+      sender ! VoteStatus //DANGER: can cause infinite loop!
     case Print =>
       println("current state of affairs: " + votes.mkString(","))
   }

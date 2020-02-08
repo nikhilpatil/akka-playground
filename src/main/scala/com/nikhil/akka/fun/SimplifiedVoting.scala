@@ -49,7 +49,7 @@ class VoteAggregator extends Actor with ActorLogging {
       context.become(
         aggregating(newRemaining, votes + (candidate -> votesForCandidate))
       )
-      if (remaining.size == 1) self ! Print
+      if (newRemaining.isEmpty) self ! Print
     case VoteStatusReply(None) =>
       sender ! VoteStatus //DANGER: can cause infinite loop!
     case Print =>
